@@ -1,5 +1,3 @@
-
-// create a configuration for our RTCPeerConnection
 let peerConnection;
 const config = {
     iceServers: [
@@ -12,8 +10,6 @@ const config = {
 const socket = io.connect(window.location.origin);
 const video = document.querySelector("video");
 
-
-// create our RTCPeerConnection and get the video stream from the broadcaster
 socket.on("offer", (id, description) => {
     peerConnection = new RTCPeerConnection(config);
     peerConnection
@@ -33,8 +29,6 @@ socket.on("offer", (id, description) => {
     };
 });
 
-
-// implement the other lifecycle functions for our peer-to-peer connection that will help us open and close new connections
 socket.on("candidate", (id, candidate) => {
     peerConnection
         .addIceCandidate(new RTCIceCandidate(candidate))
@@ -56,5 +50,3 @@ socket.on("disconnectPeer", () => {
 window.onunload = window.onbeforeunload = () => {
     socket.close();
 };
-
-
