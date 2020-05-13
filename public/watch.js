@@ -1,3 +1,8 @@
+// The only difference between Broadcast.js and Watch.js is 
+// that Watch opens only ONE peer connection
+// to the current broadcaster - and that connection receives the video
+// instead of streaming it.
+
 let peerConnection;
 const config = {
     iceServers: [
@@ -14,11 +19,16 @@ socket.on("offer", (id, description) => {
     peerConnection = new RTCPeerConnection(config);
     peerConnection
         .setRemoteDescription(description)
+        // we call the createAnswer() function to send back a connection
+        // answer to the request of the broadcaster.
         .then(() => peerConnection.createAnswer())
         .then(sdp => peerConnection.setLocalDescription(sdp))
         .then(() => {
             socket.emit("answer", id, peerConnection.localDescription);
         });
+    // After the connection is established we can continue by getting
+    // the video stream using the ontrack event listener of the
+    // peerConnection object.
     peerConnection.ontrack = event => {
         video.srcObject = event.streams[0];
     };

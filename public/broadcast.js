@@ -1,3 +1,6 @@
+// First, create the configuration objects 
+// for the peer connection
+
 const peerConnections = {};
 const config = {
   iceServers: [
@@ -9,23 +12,33 @@ const config = {
 
 const socket = io.connect(window.location.origin);
 
+// Next, create an RTCPeerConnection
 socket.on("answer", (id, description) => {
   peerConnections[id].setRemoteDescription(description);
 });
 
 socket.on("watcher", id => {
+    // Save each new RTCPeerConnection in the peerConnections global
+    // variable above
   const peerConnection = new RTCPeerConnection(config);
   peerConnections[id] = peerConnection;
 
+    // add the local stream to the connection using the addTrack() 
+    // method and passing our stream and track data.
   let stream = videoElement.srcObject;
   stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
 
+    // The peerConnection.onicecandidate event is called when we receive
+    // an ICE candidate, and we send it to our server.
   peerConnection.onicecandidate = event => {
     if (event.candidate) {
       socket.emit("candidate", id, event.candidate);
     }
   };
 
+  // After that, send a connection offer to the client by calling
+  // peerConnection.createOffer() and call 
+  // peerConnection.setLocalDescription() to configure the connection.
   peerConnection
     .createOffer()
     .then(sdp => peerConnection.setLocalDescription(sdp))
@@ -38,16 +51,18 @@ socket.on("candidate", (id, candidate) => {
   peerConnections[id].addIceCandidate(new RTCIceCandidate(candidate));
 });
 
+// closes connection when client disconnects
 socket.on("disconnectPeer", id => {
   peerConnections[id].close();
   delete peerConnections[id];
 });
 
+// close the socket if the user closes the window
 window.onunload = window.onbeforeunload = () => {
   socket.close();
 };
 
-// Get camera and microphone
+// Get camera and microphone and implement changes if selected
 const videoElement = document.querySelector("video");
 const audioSelect = document.querySelector("select#audioSource");
 const videoSelect = document.querySelector("select#videoSource");
