@@ -43,4 +43,35 @@ io.sockets.on("connection", socket => {
     });
 });
 
+let clients = [];
+
+io.sockets.on('request', request => {
+    const connection = request.accept();
+    const id = Math.floor(Math.random() * 100);
+
+    clients.forEach(client => client.connection.send(JSON.stringify({
+        client: id,
+        text: 'I am now connected',
+    })));
+
+    clients.push({ connection, id });
+
+    socket.on('message', message => {
+        clients
+            .filter(client => client.id !== id)
+            .forEach(client => client.connection.send(JSON.stringify({
+                client: id,
+                text: message.utf8Data,
+            })));
+    });
+
+    socket.on('close', () => {
+        clients = clients.filter(client => client.id !== id);
+        clients.forEach(client => client.connection.send(JSON.stringify({
+            client: id,
+            text: 'I disconnected',
+        })));
+    });
+});
+
 server.listen(port, () => console.log(`Server is running on port ${port}`));
